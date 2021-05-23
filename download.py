@@ -9,10 +9,11 @@ from psutil import Process
 from math import ceil as math_ceil
 from json import load as json_load, dump as json_dump
 from re import split as re_split, sub as re_sub
+from inspect import isclass
+from ctypes import pythonapi, c_long, py_object
 
 default_config = {
 	'number_of_thread': 5,
-	'thread_shutdown_timeout': -1,
 	'retry_times': 10,
 	'log_level': 'info',
 	'folder_path': './falseknees'
@@ -52,6 +53,10 @@ ch = StreamHandler()
 ch.setLevel(20)
 ch.setFormatter(formatter)
 logger.addHandler(ch)
+headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/66.0.3359.139 Safari/537.36'}
+download_fail = []
+completed = 0
+
 
 class Json(dict):
 	def __init__(self, file):
@@ -68,6 +73,8 @@ class Json(dict):
 		with open(self.path, 'w', encoding='utf-8') as f:
 			json_dump(self.copy(), f, indent=2, ensure_ascii=False)
 
+
+logger.warning('程序中一部分warning提示是用于醒目的')
 logger.info('正在加载配置文件')
 config = Json('config.json')
 if config['log_level'] not in log_level:
@@ -77,8 +84,10 @@ if config['log_level'] not in log_level:
 logger.setLevel(log_level[config['log_level']])
 ch.setLevel(log_level[config['log_level']])
 
+
 if not os_path_exists(config['folder_path']):
 	makedirs(config['folder_path'])
+
 
 def requests(link, times_limit, bin: bool = False):
 		try_times = 0
@@ -98,9 +107,7 @@ def requests(link, times_limit, bin: bool = False):
 		download_fail.append(link)
 		return 'error'
 
-headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/66.0.3359.139 Safari/537.36'}
-download_fail = []
-completed = 0
+
 class download_thread(Thread):
 	def __init__(self, threadID, times_limit):
 		Thread.__init__(self)
@@ -122,7 +129,7 @@ class download_thread(Thread):
 		self.exit()
 
 	def downloader(self, threadName, threadID, times_limit):
-		global completed
+		global completed, task_list
 		logger.debug(f'线程{threadName}已开始下载')
 		for i in task_list[threadID - 1]:
 			self.check_exit()
@@ -151,6 +158,7 @@ class download_thread(Thread):
 				with open(os_path_join(config['folder_path'], title + '.' + suffix), "wb")as f:
 					f.write(image)
 					logger.debug(f'线程{threadName}完成一次文件写入')
+					page_list.remove(i)
 					completed += 1
 					self.completed += 1
 			except Exception as e:
@@ -162,14 +170,19 @@ class download_thread(Thread):
 			self.exit()
 
 	def exit(self):
+		global download_thread_list
 		logger.warning(f'下载线程{self.name}关闭，完成任务：{self.completed}/{len(task_list[self.threadID - 1])}')
 		logger.warning(f'所有任务：{completed}/{page_length}')
 		if self.has_error:
 			logger.error('输入 check error 查看失败的请求')
+		Console.download_thread_exit(console)
+		if self in download_thread_list:
+			download_thread_list.remove(self)
 		exit()
 
 	def stop(self):
 		self.thread_exit = True
+
 
 def task_assignment(task, log: bool = False):
 	task_length = len(task)
@@ -186,6 +199,8 @@ def task_assignment(task, log: bool = False):
 		""".format(config['number_of_thread'], '\n'.join(infomation)))
 	return new_task_list
 
+
+# 其实到这里才开始爬233
 logger.info('正在获取archive页面')
 archive = requests('https://falseknees.com/archive.html', config['retry_times'])
 if archive =='error':
@@ -202,6 +217,21 @@ for i in range(1, config['number_of_thread'] + 1):
 	download_thread_list.append(download_thread(i, config['retry_times']))
 	download_thread_list[i - 1].start()
 
+
+def _async_raise(tid, exctype):
+	"""在线程中抛出异常使线程强制关闭"""
+	if not isclass(exctype):
+		raise TypeError("Only types can be raised (not instances)")
+	res = pythonapi.PyThreadState_SetAsyncExc(c_long(tid), py_object(exctype))
+	if res == 0:
+		raise ValueError("invalid thread id")
+	elif res != 1:
+		# if it returns a number greater than one, you're in trouble,
+		# and you should call it again with exc=NULL to revert the effect
+		pythonapi.PyThreadState_SetAsyncExc(tid, None)
+		raise SystemError("PyThreadState_SetAsyncExc failed")
+
+
 class Console(Thread):
 
 	def __init__(self):
@@ -210,8 +240,11 @@ class Console(Thread):
 		self.cmd = []
 		logger.info('控制台已启动')
 		self.setName('Console')
+		self.running_dl_thread = 0
+		self.wait_dl_thread_exit = False
 
 	def run(self):
+		self.running_dl_thread = config['number_of_thread']
 		while True:
 			try:
 				raw_input = input()
@@ -247,16 +280,23 @@ class Console(Thread):
 			logger.info(f'当前线程列表, 共 {len(thread_list)} 个活跃线程:')
 			for i in thread_list:
 				logger.info(f'	- {i.getName()}')
-		if self.cmd[1] == 'stop':
+		elif self.cmd[1] == 'stop':
 			self.stop_thread()
-		if self.cmd[1] == 'redistribute':
+		elif self.cmd[1] == 'redistribute':
 			global task_list, download_thread_list
 			self.stop_thread()
-			task_list = task_assignment(page_list)
+			self.wait_dl_thread_exit = True
+		elif self.cmd[1] == 'exit':
+			global download_thread_list
+			logger.critical('您输入了一条隐藏的Debug指令，这会导致所有下载线程强制退出，如果线程中涉及获取释放锁，这可能会导致死锁')
+			logger.critical('已在所有下载线程中抛出SystemExit')
+			for i in download_thread_list:
+				_async_raise(i.ident, SystemExit)
 			download_thread_list = []
-			for i in range(1, config['number_of_thread'] + 1):
-				download_thread_list.append(download_thread(i, config['retry_times']))
-				download_thread_list[i - 1].start()
+			self.running_dl_thread = 0
+			if self.wait_dl_thread_exit:
+				logger.debug('触发all_dl_thread_exit()')
+				self.all_dl_thread_exit()
 
 	def cmd_check_parser(self):
 		if self.cmd[1] == 'error':
@@ -264,24 +304,38 @@ class Console(Thread):
 			for i in download_fail:
 				logger.warning(f'	- {i}')
 
-	def stop_thread(self, timeout = config['thread_shutdown_timeout']):
+	def stop_thread(self):
 		if len(self.cmd) == 3:
 			if 0 < self.cmd[2] < len(download_thread_list):
 				target_thread = download_thread_list[self.cmd[2] - 1]
 				target_thread.stop()
 				logger.info('已发起线程关闭计划')
-				if timeout >= 0:
-					target_thread.join(timeout)
-					logger.info('全部线程最多会在' + timeout + '内关闭')
 			else:
 				logger.warning('编号不存在')
 		else:
 			logger.info('已发起全部线程关闭计划')
 			for i in download_thread_list:
 				i.stop()
-				if timeout >= 0:
-					i.join(timeout)
-					logger.info('全部线程最多会在' + timeout + '内关闭')
+
+	def download_thread_exit(self):
+		self.running_dl_thread-=1
+		logger.debug(str(self.running_dl_thread))
+		if self.wait_dl_thread_exit and self.running_dl_thread == 0:
+			logger.debug('触发all_dl_thread_exit()')
+			self.all_dl_thread_exit()
+
+	def all_dl_thread_exit(self):
+		global task_list, download_thread_list, page_length
+		self.wait_dl_thread_exit = False
+		page_length = len(page_list)
+		task_list = task_assignment(page_list, True)
+		download_thread_list = []
+		for i in range(1, config['number_of_thread'] + 1):
+			download_thread_list.append(download_thread(i, config['retry_times']))
+			download_thread_list[i - 1].start()
+		self.running_dl_thread = config['number_of_thread']
+
+
 help_msg = '''stop 关闭程序
 help 获取帮助
 thread list 查看线程列表
@@ -290,4 +344,5 @@ thread redistribute 重新分配任务给各个线程
 check error 查看失败请求
 '''
 
-Console().start()
+console = Console()
+console.start()
