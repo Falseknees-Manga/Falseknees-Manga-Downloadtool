@@ -1,4 +1,4 @@
-# Falseknees-Mangadownload
+# Falseknees-Manga-Downloadtool
 
 > 感谢sophie-desu的帮助，sophie-desu帮助我写好⼏乎全部的代码，我要好好谢谢sophie-desu
 > 
