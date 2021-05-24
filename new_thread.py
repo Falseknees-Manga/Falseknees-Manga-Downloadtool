@@ -23,3 +23,8 @@ def new_thread(thread_name: str or Callable = None):
 		thread_name = None
 		return wrapper(this_is_a_function)
 	return wrapper
+
+
+if __name__ == '__main__':
+	print('此文件存储new_thread函数装饰器方法，直接运行没有效果')
+	print('引入模块请使用 from .new_thread import new_thread')
