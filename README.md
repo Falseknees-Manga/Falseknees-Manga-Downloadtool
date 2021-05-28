@@ -9,6 +9,11 @@
 
 A webcrawler for https://falseknees.com/.
 
+|    | Author   | Role   | Links   |
+|----|:---------|:-------|:--------|
+| ![BadElement's Avatar](https://avatars3.githubusercontent.com/u/52056834?s=32) | BadElement | Project Lead | [Contributions](https://github.com/Falseknees-Manga/Falseknees-Manga-Downloadtool/commits?author=BadElement) |
+| ![sophie-desu's Avatar](https://avatars3.githubusercontent.com/u/52559014?s=32) | sophie_desu | Maintainer | [Contributions](https://github.com/Falseknees-Manga/Falseknees-Manga-Downloadtool?author=sophie-desu) |
+
 ## 勉勉强强可以用了！ use it that is useless!
 
 下载`download.py`开始使用吧！
