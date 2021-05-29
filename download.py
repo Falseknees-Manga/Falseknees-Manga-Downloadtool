@@ -151,8 +151,6 @@ if config['http_proxy']['enable']:
 		"http": proxy,
 		"https": proxy
 	}
-
-
 logger.info('正在加载数据文件')
 data = Json('data.json', {'is_new': ''}, './data')
 last_config = Json('last_config.json', {'is_new': ''}, './data')
@@ -172,7 +170,10 @@ def requests(link, times_limit, bin: bool = False, additional_header: dict = Non
 					requests_header = headers.update(additional_header)
 				else:
 					requests_header = headers
-				response = requests_get(link, headers=requests_header, verify=False, proxies=proxies)
+				if config['http_proxy']['enable']:
+					response = requests_get(link, headers=requests_header, verify=False, proxies=proxies)
+				else:
+					response = requests_get(link, headers=requests_header, verify=False)
 				response.raise_for_status()
 			except Exception as e:
 				try_times+=1
@@ -319,7 +320,10 @@ def get_content_length(target_thread):
 		response = None
 		while try_times < times_limit:
 			try:
-				response = requests_head('https://falseknees.com/' + i[1], verify=False, proxies=proxies).headers['Content-Length']
+				if config['http_proxy']['enable']:
+					response = requests_head('https://falseknees.com/' + i[1], verify=False, proxies=proxies).headers['Content-Length']
+				else:
+					response = requests_head('https://falseknees.com/' + i[1], verify=False).headers['Content-Length']
 			except Exception as e:
 				try_times+=1
 				logger.warning(f'{i[1]} 加载失败[{try_times}/{times_limit}]，正在重新获取：{e}')
