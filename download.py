@@ -57,7 +57,7 @@ default_config = {
 	}
 }
 
-log_level={
+log_level = {
 	'critical': 50,
 	'error': 40,
 	'warning': 30,
