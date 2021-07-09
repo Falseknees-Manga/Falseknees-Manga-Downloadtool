@@ -1,8 +1,8 @@
 # Falseknees-Manga-Downloadtool
 
-> 感谢sophie-desu的帮助，sophie-desu帮助我写好⼏乎全部的代码，我要好好谢谢sophie-desu
+> 感谢noeru-desu的帮助，noeru-desu帮助我写好⼏乎全部的代码，我要好好谢谢noeru-desu
 > 
-> thanks for sophie-desu's helps.sophie-desu help me done almost all code.i will haohao thanks sophie-desu
+> thanks for noeru-desu's helps.noeru-desu help me done almost all code.i will haohao thanks noeru-desu
 
 一个 https://falseknees.com/ 漫画爬虫
 ![](https://falseknees.com/imgs/falseknees.png)
@@ -12,7 +12,7 @@ A webcrawler for https://falseknees.com/.
 |    | Author   | Role   | Links   |
 |----|:---------|:-------|:--------|
 | ![BadElement's Avatar](https://avatars3.githubusercontent.com/u/52056834?s=32) | BadElement | Project Lead | [Contributions](https://github.com/Falseknees-Manga/Falseknees-Manga-Downloadtool/commits?author=BadElement) |
-| ![sophie-desu's Avatar](https://avatars3.githubusercontent.com/u/52559014?s=32) | sophie_desu | Maintainer | [Contributions](https://github.com/Falseknees-Manga/Falseknees-Manga-Downloadtool?author=sophie-desu) |
+| ![noeru-desu's Avatar](https://avatars3.githubusercontent.com/u/52559014?s=32) | sophie_desu | Maintainer | [Contributions](https://github.com/Falseknees-Manga/Falseknees-Manga-Downloadtool?author=noeru-desu) |
 
 ## 勉勉强强可以用了！ use it that is useless!
 
